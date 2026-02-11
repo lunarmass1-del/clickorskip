@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "echo 'Deploy configured via wrangler.toml'"
+    "deploy": "npx wrangler pages deploy out --project-name=clickorskip"
   },
   "dependencies": {
     "clsx": "^2.1.1",
