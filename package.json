@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "node scripts/deploy.js"
+    "deploy": "echo 'Deploy configured via wrangler.toml'"
   },
   "dependencies": {
     "clsx": "^2.1.1",
