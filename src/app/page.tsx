@@ -8,6 +8,7 @@ import { Plane, Clock, Users, Zap, ArrowRight, ExternalLink, Star, Shield, Trend
 import { Header } from '@/components/layout/Header';
 import Container from '@/components/ui/Container';
 import { destinations } from '@/data/destinations';
+import { EmailCapture } from '@/components/EmailCapture';
 
 // ==============================================
 // HERO SECTION - IMMEDIATE HOOK WITH DEALS
@@ -173,16 +174,16 @@ function Hero() {
         {/* Trust badges */}
         <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-[#a1a1aa]">
           <div className="flex items-center gap-2">
-            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-            <span>4.9/5 (12,847 reviews)</span>
-          </div>
-          <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-[#22c55e]" />
-            <span>Price Match Guarantee</span>
+            <span>Compare 100+ Airlines</span>
           </div>
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-[#6366f1]" />
-            <span>50,000+ happy travelers</span>
+            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+            <span>Best Price Guarantee</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-[#6366f1]" />
+            <span>Real-Time Prices</span>
           </div>
         </div>
       </Container>
@@ -416,13 +417,21 @@ function FinalCTA() {
 // ==============================================
 function Footer() {
   return (
-    <footer className="py-6 bg-[#0a0a0f] border-t border-white/5">
+    <footer className="py-8 bg-[#0a0a0f] border-t border-white/5">
       <Container>
+        {/* Affiliate Disclosure */}
+        <div className="mb-6 p-4 rounded-lg bg-[#1a1a24] border border-white/5">
+          <p className="text-xs text-[#71717a] leading-relaxed">
+            <strong className="text-[#a1a1aa]">Affiliate Disclosure:</strong> ClickOrSkip is a participant in affiliate programs with travel booking partners including Aviasales, AirHelp, Localrent, GetTransfer, and Klook. We may earn a commission when you click on links and make a purchase. This does not affect the price you pay. Our recommendations are based on our matching algorithm and editorial judgment. We only recommend services we believe will be valuable to our users.
+          </p>
+        </div>
+
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-[#71717a]">
           <div>&copy; 2026 ClickOrSkip. All rights reserved.</div>
           <div className="flex gap-4">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
             <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+            <a href="mailto:hello@clickorskip.online" className="hover:text-white transition-colors">Contact</a>
           </div>
         </div>
       </Container>
@@ -442,6 +451,9 @@ export default function Home() {
       <HowItWorks />
       <FinalCTA />
       <Footer />
+
+      {/* Email Capture Popup - shows after 8 seconds */}
+      <EmailCapture delay={8000} trigger="delay" />
     </main>
   );
 }
