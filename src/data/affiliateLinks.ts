@@ -29,6 +29,7 @@ export const affiliateLinks = {
 
 // ============================================
 // CTA BUTTONS CONFIG - Ordered by Commission
+// Optimized for maximum click-through rate
 // ============================================
 
 export const ctaConfig = [
@@ -38,7 +39,7 @@ export const ctaConfig = [
     emoji: '✈️',
     icon: 'Plane',
     description: 'Compare 100+ airlines',
-    urgency: 'Prices dropping now!',
+    urgency: 'Save up to 40%!',
     color: 'from-blue-500 via-blue-600 to-cyan-500',
     priority: 1,
     getLink: () => '/go/flights',
@@ -49,7 +50,7 @@ export const ctaConfig = [
     emoji: '🚗',
     icon: 'Car',
     description: 'Local rentals, best prices',
-    urgency: 'Free cancellation',
+    urgency: 'Last 3 at this price!',
     color: 'from-green-500 via-green-600 to-emerald-500',
     priority: 2,
     getLink: () => '/go/cars',
@@ -60,7 +61,7 @@ export const ctaConfig = [
     emoji: '🎯',
     icon: 'Ticket',
     description: 'Skip-the-line tickets',
-    urgency: 'Selling fast!',
+    urgency: '89% sell out!',
     color: 'from-orange-500 via-orange-600 to-red-500',
     priority: 3,
     getLink: () => '/go/tours',
@@ -71,7 +72,7 @@ export const ctaConfig = [
     emoji: '🚐',
     icon: 'Bus',
     description: 'Pre-book & relax',
-    urgency: 'From $25',
+    urgency: 'Limited spots!',
     color: 'from-purple-500 via-purple-600 to-pink-500',
     priority: 4,
     getLink: () => '/go/transfers',
@@ -79,15 +80,16 @@ export const ctaConfig = [
 ];
 
 // AirHelp Upsell - HIGH CONVERTING!
+// Enhanced copy for maximum conversions
 export const airhelpConfig = {
   id: 'airhelp',
   label: 'Flight Delayed or Cancelled?',
-  sublabel: 'Get up to €600 compensation',
-  description: "83% of travelers don't know they can claim compensation for delayed flights. Check if you're owed money - it's FREE!",
+  sublabel: 'Claim up to €600 - Takes 2 minutes!',
+  description: "83% of travelers don't claim the compensation they're owed. In the last 3 years, you may have missed out on hundreds of euros. Check now - it's completely FREE and takes just 2 minutes!",
   emoji: '💰',
   icon: 'AlertCircle',
   urgency: 'FREE to check',
-  ctaText: 'Check My Flights',
+  ctaText: 'Check If I\'m Owed Money',
   color: 'from-amber-500 via-orange-500 to-red-500',
   getLink: () => '/go/airhelp',
 };

@@ -13,23 +13,63 @@ interface CTAButtonsProps {
 // Generate realistic-looking urgency stats
 function useUrgencyStats() {
   const [stats, setStats] = useState({
-    viewersNow: Math.floor(Math.random() * 50) + 20,
-    bookedToday: Math.floor(Math.random() * 100) + 50,
-    priceDropPercent: Math.floor(Math.random() * 25) + 15,
+    viewersNow: Math.floor(Math.random() * 50) + 47,
+    bookedToday: Math.floor(Math.random() * 100) + 127,
+    priceDropPercent: Math.floor(Math.random() * 20) + 22,
+    seatsLeft: Math.floor(Math.random() * 5) + 3,
   });
 
   useEffect(() => {
     const interval = setInterval(() => {
       setStats(prev => ({
-        viewersNow: Math.max(10, prev.viewersNow + Math.floor(Math.random() * 7) - 3),
-        bookedToday: prev.bookedToday + (Math.random() > 0.7 ? 1 : 0),
+        viewersNow: Math.max(25, prev.viewersNow + Math.floor(Math.random() * 7) - 3),
+        bookedToday: prev.bookedToday + (Math.random() > 0.6 ? 1 : 0),
         priceDropPercent: prev.priceDropPercent,
+        seatsLeft: Math.max(2, prev.seatsLeft - (Math.random() > 0.9 ? 1 : 0)),
       }));
-    }, 3000);
+    }, 3500);
     return () => clearInterval(interval);
   }, []);
 
   return stats;
+}
+
+// Countdown timer component for price expiration
+function PriceExpiryCountdown() {
+  const [timeLeft, setTimeLeft] = useState({ hours: 2, minutes: 47, seconds: 33 });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        let { hours, minutes, seconds } = prev;
+        seconds--;
+        if (seconds < 0) {
+          seconds = 59;
+          minutes--;
+        }
+        if (minutes < 0) {
+          minutes = 59;
+          hours--;
+        }
+        if (hours < 0) {
+          hours = 23;
+          minutes = 59;
+          seconds = 59;
+        }
+        return { hours, minutes, seconds };
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-1.5 text-xs">
+      <span className="text-amber-400 font-medium">Price expires in:</span>
+      <span className="px-1.5 py-0.5 bg-amber-500/20 rounded text-amber-400 font-mono font-bold">
+        {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+      </span>
+    </div>
+  );
 }
 
 // AirHelp Upsell Component - HIGH CONVERSION!
@@ -126,9 +166,24 @@ export default function CTAButtons({ destination }: CTAButtonsProps) {
 
   return (
     <div className="space-y-4">
-      {/* Urgency header */}
+      {/* SCARCITY ALERT - Top banner */}
       <motion.div
-        className="flex items-center justify-center gap-4 sm:gap-6 py-3 px-4 rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/20"
+        className="py-2 px-4 rounded-lg bg-red-500/10 border border-red-500/30 text-center"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+      >
+        <motion.p
+          className="text-sm text-red-400 font-semibold"
+          animate={{ opacity: [1, 0.7, 1] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+        >
+          Only {stats.seatsLeft} seats left at this price to {destination.name}!
+        </motion.p>
+      </motion.div>
+
+      {/* Urgency header - Enhanced */}
+      <motion.div
+        className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 py-3 px-4 rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/20"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -142,16 +197,33 @@ export default function CTAButtons({ destination }: CTAButtonsProps) {
             />
           </div>
           <span className="text-xs sm:text-sm text-[#22c55e] font-medium">
-            {stats.viewersNow} viewing
+            {stats.viewersNow} viewing now
           </span>
         </div>
-        <div className="w-px h-4 bg-[#22c55e]/30" />
+        <div className="w-px h-4 bg-[#22c55e]/30 hidden sm:block" />
         <div className="flex items-center gap-2">
           <TrendingDown className="w-4 h-4 text-[#22c55e]" />
           <span className="text-xs sm:text-sm text-[#22c55e] font-medium">
-            Prices dropped {stats.priceDropPercent}%
+            {stats.priceDropPercent}% OFF today
           </span>
         </div>
+        <div className="w-px h-4 bg-[#22c55e]/30 hidden sm:block" />
+        <div className="flex items-center gap-2">
+          <Check className="w-4 h-4 text-[#22c55e]" />
+          <span className="text-xs sm:text-sm text-[#22c55e] font-medium">
+            {stats.bookedToday} booked today
+          </span>
+        </div>
+      </motion.div>
+
+      {/* Price expiry countdown */}
+      <motion.div
+        className="flex justify-center"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <PriceExpiryCountdown />
       </motion.div>
 
       {/* HERO CTA - Flights (40% commission!) */}
@@ -246,7 +318,7 @@ export default function CTAButtons({ destination }: CTAButtonsProps) {
             href={cta.getLink()}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 sm:px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#6366f1]/50 transition-all text-xs sm:text-sm text-zinc-300 hover:text-white flex items-center gap-1.5 sm:gap-2"
+            className="min-h-[44px] px-4 sm:px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#6366f1]/50 transition-all text-sm text-zinc-300 hover:text-white flex items-center gap-2"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -321,21 +393,45 @@ export default function CTAButtons({ destination }: CTAButtonsProps) {
         </AnimatePresence>
       </motion.div>
 
-      {/* Trust badges */}
-      <div className="flex items-center justify-center gap-4 pt-2">
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-          <Zap className="w-3.5 h-3.5" />
-          Real-time prices
+      {/* FOMO message */}
+      <motion.div
+        className="text-center py-3 px-4 rounded-xl bg-amber-500/5 border border-amber-500/20"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+      >
+        <p className="text-sm text-amber-400">
+          <span className="font-semibold">Don&apos;t miss out!</span> {stats.bookedToday} travelers booked {destination.name} today.
+          <br />
+          <span className="text-xs text-amber-400/70">Average savings: $287 vs last-minute booking</span>
+        </p>
+      </motion.div>
+
+      {/* Trust badges - Enhanced */}
+      <div className="grid grid-cols-3 gap-2 pt-2">
+        <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white/5">
+          <Zap className="w-4 h-4 text-accent-primary" />
+          <span className="text-[10px] text-zinc-500 text-center">Real-time prices</span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-          <Clock className="w-3.5 h-3.5" />
-          Instant booking
+        <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white/5">
+          <Clock className="w-4 h-4 text-travel-nature" />
+          <span className="text-[10px] text-zinc-500 text-center">Instant booking</span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-          <Shield className="w-3.5 h-3.5" />
-          Secure checkout
+        <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-white/5">
+          <Shield className="w-4 h-4 text-travel-tropical" />
+          <span className="text-[10px] text-zinc-500 text-center">Secure checkout</span>
         </div>
       </div>
+
+      {/* Final loss aversion message */}
+      <motion.p
+        className="text-center text-xs text-text-muted"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.8 }}
+      >
+        Prices typically increase by 15-20% closer to departure. Book now to lock in savings.
+      </motion.p>
     </div>
   );
 }
