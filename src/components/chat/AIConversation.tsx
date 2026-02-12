@@ -122,7 +122,7 @@ export function AIConversation({ onComplete }: AIConversationProps) {
       setScores(prev => ({ ...prev, ...fallbackResponse.scores }));
       setQuestionCount(prev => prev + 1);
 
-      if (questionCount >= 4) {
+      if (questionCount >= 3) {
         setShowResults(true);
       }
     } finally {

@@ -1,8 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { ArrowRight, Plane } from 'lucide-react';
 import Container from '@/components/ui/Container';
 import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import { affiliateLinks } from '@/data/affiliateLinks';
 
 interface Step {
   icon: string;
@@ -118,6 +122,37 @@ export function HowItWorks() {
               </Card>
             </motion.div>
           ))}
+        </motion.div>
+
+        {/* CTA Section - No dead ends */}
+        <motion.div
+          className="text-center mt-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+        >
+          <p className="text-text-muted text-sm mb-4">Ready to get started?</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            {/* Primary CTA - Quiz */}
+            <Link href="/chat">
+              <Button variant="primary" size="lg">
+                <span>Start Now</span>
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+
+            {/* Secondary CTA - Direct to flights */}
+            <a
+              href={affiliateLinks.flights.getLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-travel-tropical/10 border border-travel-tropical/30 text-travel-tropical font-medium hover:bg-travel-tropical/20 transition-all duration-300 cursor-pointer"
+            >
+              <Plane className="w-4 h-4" />
+              Or search flights directly
+            </a>
+          </div>
         </motion.div>
       </Container>
     </section>

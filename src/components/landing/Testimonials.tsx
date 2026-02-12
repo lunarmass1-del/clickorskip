@@ -1,8 +1,10 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { ArrowRight, Plane } from 'lucide-react';
 import Container from '@/components/ui/Container';
 import Card from '@/components/ui/Card';
+import { affiliateLinks } from '@/data/affiliateLinks';
 
 interface Testimonial {
   name: string;
@@ -123,7 +125,7 @@ export function Testimonials() {
                 </p>
 
                 {/* Author info */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 mb-4">
                   {/* Avatar */}
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center text-white font-semibold text-sm">
                     {testimonial.avatar}
@@ -138,9 +140,39 @@ export function Testimonials() {
                     </p>
                   </div>
                 </div>
+
+                {/* CTA - Book this destination */}
+                <a
+                  href={affiliateLinks.flights.getLink()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-accent-primary hover:text-accent-secondary font-medium transition-colors duration-200 cursor-pointer group"
+                >
+                  <Plane className="w-4 h-4" />
+                  <span>Book {testimonial.destination}</span>
+                  <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-200" />
+                </a>
               </Card>
             </motion.div>
           ))}
+        </motion.div>
+
+        {/* Section CTA */}
+        <motion.div
+          className="text-center mt-12"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4 }}
+        >
+          <p className="text-text-muted text-sm mb-4">Want results like these?</p>
+          <a
+            href="/chat"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-accent-primary to-accent-secondary text-white font-semibold hover:shadow-lg hover:shadow-accent-primary/25 transition-all duration-300 hover:scale-105 cursor-pointer"
+          >
+            Find My Perfect Match
+            <ArrowRight className="w-4 h-4" />
+          </a>
         </motion.div>
       </Container>
     </section>

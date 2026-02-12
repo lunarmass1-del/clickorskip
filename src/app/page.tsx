@@ -3,11 +3,12 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Sparkles, MessageCircle, Target, Plane, Star, MapPin, ArrowRight, Quote } from 'lucide-react';
+import { Sparkles, MessageCircle, Target, Plane, Star, MapPin, ArrowRight, Quote, ExternalLink } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import Container from '@/components/ui/Container';
 import Button from '@/components/ui/Button';
 import { destinations } from '@/data/destinations';
+import { affiliateLinks } from '@/data/affiliateLinks';
 
 // Animation variants
 const fadeInUp = {
@@ -107,6 +108,28 @@ function Hero() {
                 </Button>
               </motion.div>
             </Link>
+          </motion.div>
+
+          {/* Secondary CTAs - Direct affiliate links */}
+          <motion.div variants={fadeInUp} className="mb-6">
+            <p className="text-[#71717a] text-sm mb-3">Or jump straight to deals:</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <a
+                href={affiliateLinks.flights.getLink()}
+                className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#06b6d4]/10 border border-[#06b6d4]/30 text-[#06b6d4] font-medium hover:bg-[#06b6d4]/20 transition-all duration-300 cursor-pointer"
+              >
+                <Plane className="w-4 h-4" />
+                Find Cheap Flights
+                <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </a>
+              <a
+                href={affiliateLinks.airhelp.getLink()}
+                className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] font-medium hover:bg-[#22c55e]/20 transition-all duration-300 cursor-pointer"
+              >
+                <span>💰</span>
+                Flight Delayed? Get Compensation
+              </a>
+            </div>
           </motion.div>
 
           {/* Urgency text */}
@@ -212,6 +235,32 @@ function HowItWorks() {
             </motion.div>
           ))}
         </div>
+
+        {/* CTA - No dead ends */}
+        <motion.div
+          className="text-center mt-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4 }}
+        >
+          <p className="text-[#71717a] text-sm mb-4">Ready to get started?</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link href="/chat">
+              <Button variant="primary" size="lg">
+                Start Now
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+            <a
+              href={affiliateLinks.flights.getLink()}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#06b6d4]/10 border border-[#06b6d4]/30 text-[#06b6d4] font-medium hover:bg-[#06b6d4]/20 transition-all duration-300 cursor-pointer"
+            >
+              <Plane className="w-4 h-4" />
+              Or search flights directly
+            </a>
+          </div>
+        </motion.div>
       </Container>
     </section>
   );
@@ -242,27 +291,37 @@ function DestinationsPreview() {
           {featuredDestinations.map((dest, index) => (
             <motion.div
               key={dest.id}
-              className="relative group cursor-pointer"
+              className="relative group"
               initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ y: -8 }}
             >
-              <div className="aspect-[3/4] rounded-2xl overflow-hidden relative">
-                <Image
-                  src={dest.image}
-                  alt={dest.name}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <div className="text-2xl mb-1">{dest.emoji}</div>
-                  <h3 className="font-semibold text-shadow">{dest.name}</h3>
-                  <p className="text-sm text-[#a1a1aa]">{dest.country}</p>
+              <a
+                href={affiliateLinks.flights.getLink()}
+                className="block cursor-pointer"
+              >
+                <div className="aspect-[3/4] rounded-2xl overflow-hidden relative border-2 border-transparent group-hover:border-[#6366f1]/50 transition-colors duration-300">
+                  <Image
+                    src={dest.image}
+                    alt={dest.name}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:from-black/90 transition-all duration-300" />
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <div className="text-2xl mb-1">{dest.emoji}</div>
+                    <h3 className="font-semibold text-shadow">{dest.name}</h3>
+                    <p className="text-sm text-[#a1a1aa] group-hover:hidden">{dest.country}</p>
+                    <p className="text-sm text-[#6366f1] font-medium hidden group-hover:flex items-center gap-1">
+                      <Plane className="w-3 h-3" />
+                      Find Flights
+                      <ArrowRight className="w-3 h-3" />
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </a>
             </motion.div>
           ))}
         </div>
@@ -292,18 +351,21 @@ function Testimonials() {
       quote: "ClickOrSkip found me the perfect honeymoon spot! Santorini was everything we dreamed of and more.",
       author: "Sarah M.",
       location: "New York",
+      destination: "Santorini",
       rating: 5,
     },
     {
       quote: "I was skeptical at first, but the AI really understood what I was looking for. Bali was incredible!",
       author: "James T.",
       location: "London",
+      destination: "Bali",
       rating: 5,
     },
     {
       quote: "As a solo traveler, I needed somewhere safe and exciting. Tokyo was the perfect recommendation!",
       author: "Emily R.",
       location: "Sydney",
+      destination: "Tokyo",
       rating: 5,
     },
   ];
@@ -346,13 +408,41 @@ function Testimonials() {
 
               <p className="text-[#a1a1aa] mb-6 italic">&quot;{testimonial.quote}&quot;</p>
 
-              <div>
+              <div className="mb-4">
                 <p className="font-semibold">{testimonial.author}</p>
                 <p className="text-sm text-[#71717a]">{testimonial.location}</p>
               </div>
+
+              {/* CTA - Book this destination */}
+              <a
+                href={affiliateLinks.flights.getLink()}
+                className="inline-flex items-center gap-2 text-sm text-[#6366f1] hover:text-[#8b5cf6] font-medium transition-colors duration-200 cursor-pointer group"
+              >
+                <Plane className="w-4 h-4" />
+                <span>Book {testimonial.destination}</span>
+                <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform duration-200" />
+              </a>
             </motion.div>
           ))}
         </div>
+
+        {/* Section CTA */}
+        <motion.div
+          className="text-center mt-12"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4 }}
+        >
+          <p className="text-[#71717a] text-sm mb-4">Want results like these?</p>
+          <Link
+            href="/chat"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-semibold hover:shadow-lg hover:shadow-[#6366f1]/25 transition-all duration-300 hover:scale-105 cursor-pointer"
+          >
+            Find My Perfect Match
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </motion.div>
       </Container>
     </section>
   );
@@ -379,15 +469,37 @@ function FinalCTA() {
             <br />
             <span className="gradient-text">Perfect Destination?</span>
           </h2>
-          <p className="text-lg text-[#a1a1aa] mb-10 max-w-xl mx-auto">
+          <p className="text-lg text-[#a1a1aa] mb-8 max-w-xl mx-auto">
             Join over 50,000 travelers who found their dream vacation with ClickOrSkip. It only takes 60 seconds!
           </p>
-          <Link href="/chat">
-            <Button variant="primary" size="lg" className="text-lg px-12 py-5">
-              <Sparkles className="w-5 h-5" />
-              Start Now - It&apos;s Free
-            </Button>
-          </Link>
+
+          {/* Primary CTA - Quiz */}
+          <div className="mb-6">
+            <Link href="/chat">
+              <Button variant="primary" size="lg" className="text-lg px-12 py-5">
+                <Sparkles className="w-5 h-5" />
+                Start Now - It&apos;s Free
+              </Button>
+            </Link>
+          </div>
+
+          {/* Secondary CTA - Direct flights */}
+          <div className="mb-6">
+            <p className="text-[#71717a] text-sm mb-3">Already know where to go?</p>
+            <a
+              href={affiliateLinks.flights.getLink()}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#06b6d4]/10 border border-[#06b6d4]/30 text-[#06b6d4] font-semibold hover:bg-[#06b6d4]/20 transition-all duration-300 hover:scale-105 cursor-pointer"
+            >
+              <Plane className="w-5 h-5" />
+              Search Cheap Flights Now
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          </div>
+
+          {/* FOMO text */}
+          <p className="text-sm text-[#f97316]">
+            Limited time: Get up to 40% off when you book through our partners
+          </p>
         </motion.div>
       </Container>
     </section>
