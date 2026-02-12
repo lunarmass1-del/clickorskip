@@ -350,7 +350,7 @@ export default function ResultPage() {
       >
         <div className="bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f] to-transparent pt-4 pb-2 px-4">
           <a
-            href={affiliateLinks.flights.getLink(selectedMatch.destination.id)}
+            href={affiliateLinks.flights.getLink()}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-bold shadow-lg shadow-[#6366f1]/30"

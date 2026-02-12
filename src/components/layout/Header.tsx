@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Container from '@/components/ui/Container';
 import Button from '@/components/ui/Button';
+import { Logo } from '@/components/ui/Logo';
 
 interface HeaderProps {
   progress?: number;
@@ -40,17 +41,8 @@ export function Header({ progress, totalSteps = 6 }: HeaderProps) {
               </Link>
             )}
 
-            {/* Logo */}
-            <Link href="/">
-              <motion.div
-                className="flex items-center gap-2"
-                whileHover={{ scale: 1.02 }}
-              >
-                <span className="text-xl md:text-2xl font-bold bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-pink bg-clip-text text-transparent">
-                  ClickOrSkip
-                </span>
-              </motion.div>
-            </Link>
+            {/* Logo with icon */}
+            <Logo size={isLanding ? 'md' : 'sm'} showIcon={true} />
           </div>
 
           {/* Center - Progress (only on chat page) */}

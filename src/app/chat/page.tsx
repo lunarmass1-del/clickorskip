@@ -1,16 +1,18 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, Sparkles, Clock, Users } from 'lucide-react';
+import { Plane, Sparkles, Clock, Users, MessageCircle, Images, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Container from '@/components/ui/Container';
+import { Logo } from '@/components/ui/Logo';
 import { vibeRounds, getAIReaction, VibeImage } from '@/data/vibeImages';
 import { destinations } from '@/data/destinations';
 import { calculateMatches } from '@/lib/matching';
 import { ImagePair } from '@/components/chat/ImagePair';
 import { AIChatStrip } from '@/components/chat/AIChatStrip';
+import { AIConversation } from '@/components/chat/AIConversation';
 
 // OPTIMIZED: Only 3 rounds for fast conversion
 const QUICK_ROUNDS = [0, 2, 6]; // Energy, Culture, Vibe - most decisive questions
@@ -23,6 +25,76 @@ const urgencyMessages = [
   { icon: Users, text: "2,847 people found their trip today" },
   { icon: Plane, text: "Prices dropping for spring getaways" },
 ];
+
+// Mode selector component
+function ModeSelector({
+  onSelectMode,
+}: {
+  onSelectMode: (mode: 'chat' | 'visual') => void;
+}) {
+  return (
+    <motion.div
+      className="flex flex-col items-center justify-center min-h-[60vh] px-4"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+    >
+      <motion.div
+        className="w-16 h-16 mb-6 rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] flex items-center justify-center"
+        animate={{ scale: [1, 1.05, 1] }}
+        transition={{ duration: 2, repeat: Infinity }}
+      >
+        <Sparkles className="w-8 h-8 text-white" />
+      </motion.div>
+
+      <h1 className="text-2xl sm:text-3xl font-bold text-white text-center mb-3">
+        How do you want to find your match?
+      </h1>
+      <p className="text-[#a1a1aa] text-center mb-8 max-w-md">
+        Chat with our AI travel buddy or quickly tap through images - both take under 60 seconds!
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+        {/* AI Chat Option */}
+        <motion.button
+          onClick={() => onSelectMode('chat')}
+          className="relative group p-6 rounded-2xl bg-gradient-to-br from-[#6366f1]/20 to-[#8b5cf6]/20 border border-[#6366f1]/30 hover:border-[#6366f1] transition-all text-left"
+          whileHover={{ scale: 1.02, y: -4 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-[#22c55e] text-[10px] font-bold text-white rounded-full">
+            NEW
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-[#6366f1]/20 flex items-center justify-center mb-4">
+            <MessageCircle className="w-6 h-6 text-[#6366f1]" />
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-1">Chat with AI</h3>
+          <p className="text-sm text-[#a1a1aa]">
+            Have a conversation with our friendly AI travel buddy
+          </p>
+        </motion.button>
+
+        {/* Visual Quiz Option */}
+        <motion.button
+          onClick={() => onSelectMode('visual')}
+          className="relative group p-6 rounded-2xl bg-gradient-to-br from-[#8b5cf6]/20 to-[#d946ef]/20 border border-[#8b5cf6]/30 hover:border-[#8b5cf6] transition-all text-left"
+          whileHover={{ scale: 1.02, y: -4 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-[#f97316] text-[10px] font-bold text-white rounded-full">
+            FAST
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-[#8b5cf6]/20 flex items-center justify-center mb-4">
+            <Images className="w-6 h-6 text-[#8b5cf6]" />
+          </div>
+          <h3 className="text-lg font-semibold text-white mb-1">Visual Quiz</h3>
+          <p className="text-sm text-[#a1a1aa]">
+            Pick 3 images that match your vibe - 30 seconds!
+          </p>
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
 
 // Destination teasers shown during quiz
 function DestinationTeaser({
@@ -121,12 +193,12 @@ function UrgencyBanner() {
   const Icon = message.icon;
 
   // Rotate messages
-  useState(() => {
+  useEffect(() => {
     const interval = setInterval(() => {
       setMessageIndex(i => (i + 1) % urgencyMessages.length);
     }, 4000);
     return () => clearInterval(interval);
-  });
+  }, []);
 
   return (
     <motion.div
@@ -215,7 +287,8 @@ function QuickRoundDisplay({
   );
 }
 
-export default function ChatPage() {
+// Visual Quiz Mode
+function VisualQuizMode() {
   const router = useRouter();
 
   // State
@@ -310,25 +383,7 @@ export default function ChatPage() {
   );
 
   return (
-    <div className="min-h-screen-safe bg-[#0a0a0f] flex flex-col">
-      {/* Urgency banner at top */}
-      <UrgencyBanner />
-
-      {/* Compact header */}
-      <header className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/5">
-        <Container>
-          <div className="flex items-center justify-between h-14 gap-4">
-            {/* Logo */}
-            <Link href="/" className="flex-shrink-0">
-              <span className="text-lg font-bold gradient-text">ClickOrSkip</span>
-            </Link>
-
-            {/* Progress */}
-            <QuickProgressBar currentRound={currentRound} totalRounds={TOTAL_ROUNDS} />
-          </div>
-        </Container>
-      </header>
-
+    <>
       {/* Main content */}
       <main className="flex-1 py-6 sm:py-8 overflow-y-auto flex flex-col items-center justify-center">
         <Container className="max-w-xl">
@@ -382,6 +437,89 @@ export default function ChatPage() {
       <div className="sticky bottom-0 left-0 right-0 z-50 p-3 sm:p-4 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/95 to-transparent">
         <AIChatStrip message={aiMessage} isTyping={isAiTyping} />
       </div>
+    </>
+  );
+}
+
+// AI Chat Mode
+function AIChatMode() {
+  const router = useRouter();
+
+  const handleComplete = useCallback((scores: Record<string, number>) => {
+    const matches = calculateMatches(scores, destinations);
+    sessionStorage.setItem('travelResults', JSON.stringify({
+      matches: matches.slice(0, 3),
+      scores,
+      timestamp: new Date().toISOString(),
+    }));
+    router.push('/result');
+  }, [router]);
+
+  return (
+    <main className="flex-1 flex flex-col overflow-hidden">
+      <AIConversation onComplete={handleComplete} />
+    </main>
+  );
+}
+
+export default function ChatPage() {
+  const [mode, setMode] = useState<'select' | 'chat' | 'visual'>('select');
+  const [currentRound, setCurrentRound] = useState(0);
+
+  return (
+    <div className="min-h-screen-safe bg-[#0a0a0f] flex flex-col">
+      {/* Urgency banner at top */}
+      <UrgencyBanner />
+
+      {/* Compact header */}
+      <header className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/5">
+        <Container>
+          <div className="flex items-center justify-between h-14 gap-4">
+            {/* Back button (only if mode selected) */}
+            {mode !== 'select' ? (
+              <button
+                onClick={() => setMode('select')}
+                className="flex items-center gap-2 text-[#a1a1aa] hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span className="text-sm hidden sm:inline">Back</span>
+              </button>
+            ) : (
+              <Link href="/" className="flex items-center gap-2 text-[#a1a1aa] hover:text-white transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+                <span className="text-sm hidden sm:inline">Home</span>
+              </Link>
+            )}
+
+            {/* Logo */}
+            <Logo size="sm" showIcon={true} />
+
+            {/* Progress (visual mode only) */}
+            {mode === 'visual' && (
+              <QuickProgressBar currentRound={currentRound} totalRounds={TOTAL_ROUNDS} />
+            )}
+
+            {/* Mode indicator */}
+            {mode === 'chat' && (
+              <div className="flex items-center gap-2 text-[#6366f1]">
+                <MessageCircle className="w-4 h-4" />
+                <span className="text-xs font-medium">AI Chat</span>
+              </div>
+            )}
+
+            {mode === 'select' && <div className="w-20" />}
+          </div>
+        </Container>
+      </header>
+
+      {/* Content based on mode */}
+      {mode === 'select' && (
+        <ModeSelector onSelectMode={(m) => setMode(m)} />
+      )}
+
+      {mode === 'visual' && <VisualQuizMode />}
+
+      {mode === 'chat' && <AIChatMode />}
     </div>
   );
 }
