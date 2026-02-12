@@ -87,21 +87,35 @@ function Hero() {
           {/* Subheading */}
           <motion.p
             variants={fadeInUp}
-            className="text-lg sm:text-xl text-[#a1a1aa] mb-10 max-w-2xl mx-auto"
+            className="text-lg sm:text-xl text-[#a1a1aa] mb-8 max-w-2xl mx-auto"
           >
-            Our AI travel buddy asks a few quick questions and matches you with your dream destination. Free, fun, and takes less than a minute!
+            Pick 3 images. Get your perfect destination. Book at the best prices. It&apos;s that simple!
           </motion.p>
 
           {/* CTA Button */}
-          <motion.div variants={fadeInUp} className="mb-12">
+          <motion.div variants={fadeInUp} className="mb-6">
             <Link href="/chat">
-              <Button variant="primary" size="lg" className="text-lg px-10 py-5">
-                <Sparkles className="w-5 h-5" />
-                Start Chatting
-                <ArrowRight className="w-5 h-5" />
-              </Button>
+              <motion.div
+                className="inline-block"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button variant="primary" size="lg" className="text-lg px-10 py-5">
+                  <Sparkles className="w-5 h-5" />
+                  Find My Destination
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              </motion.div>
             </Link>
           </motion.div>
+
+          {/* Urgency text */}
+          <motion.p
+            variants={fadeInUp}
+            className="text-sm text-[#22c55e] mb-10"
+          >
+            Flash sale: Up to 40% off flights this week
+          </motion.p>
 
           {/* Stats */}
           <motion.div
@@ -128,20 +142,20 @@ function HowItWorks() {
   const steps = [
     {
       icon: MessageCircle,
-      title: 'Chat',
-      description: 'Answer 6 quick questions about your travel preferences',
+      title: 'Pick',
+      description: 'Tap 3 images that match your vibe',
       color: '#6366f1',
     },
     {
       icon: Target,
       title: 'Match',
-      description: 'We find your perfect destination from our curated list',
+      description: 'AI finds your perfect destination instantly',
       color: '#8b5cf6',
     },
     {
       icon: Plane,
       title: 'Book',
-      description: 'Get the best deals on flights and hotels instantly',
+      description: 'Get exclusive deals on flights & hotels',
       color: '#d946ef',
     },
   ];

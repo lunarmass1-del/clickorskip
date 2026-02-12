@@ -86,6 +86,12 @@ body {
   to { transform: rotate(360deg); }
 }
 
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
 /* Animation utilities */
 .animate-float {
   animation: float 3s ease-in-out infinite;
@@ -104,6 +110,10 @@ body {
   );
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
+}
+
+.animate-gradient {
+  animation: gradient 3s ease infinite;
 }
 
 /* Button styles */

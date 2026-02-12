@@ -1,113 +1,192 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
+import { Plane, Sparkles, Clock, Users } from 'lucide-react';
 import Link from 'next/link';
 import Container from '@/components/ui/Container';
-import { vibeRounds, getAIReaction, getRandomWildcard, VibeImage } from '@/data/vibeImages';
+import { vibeRounds, getAIReaction, VibeImage } from '@/data/vibeImages';
 import { destinations } from '@/data/destinations';
 import { calculateMatches } from '@/lib/matching';
 import { ImagePair } from '@/components/chat/ImagePair';
 import { AIChatStrip } from '@/components/chat/AIChatStrip';
 
-// Constants
-const TOTAL_ROUNDS = 8;
-const WILDCARD_ROUND = 8; // Index 8 = wildcard (after 0-7 regular rounds)
-const TRANSITION_DELAY = 1500; // ms before next round
-const WILDCARD_TIME_LIMIT = 5; // seconds
+// OPTIMIZED: Only 3 rounds for fast conversion
+const QUICK_ROUNDS = [0, 2, 6]; // Energy, Culture, Vibe - most decisive questions
+const TOTAL_ROUNDS = 3;
+const TRANSITION_DELAY = 800; // Faster transitions
 
-// Progress Indicator Component (inline since it's simple)
-function ProgressIndicator({
+// Live deal messages to create urgency
+const urgencyMessages = [
+  { icon: Clock, text: "Flash sale: 40% off flights ending soon!" },
+  { icon: Users, text: "2,847 people found their trip today" },
+  { icon: Plane, text: "Prices dropping for spring getaways" },
+];
+
+// Destination teasers shown during quiz
+function DestinationTeaser({
+  scores,
+  roundIndex
+}: {
+  scores: Record<string, number>;
+  roundIndex: number;
+}) {
+  const matches = useMemo(() => {
+    if (Object.keys(scores).length === 0) return [];
+    return calculateMatches(scores, destinations).slice(0, 3);
+  }, [scores]);
+
+  if (matches.length === 0 || roundIndex === 0) return null;
+
+  const topMatch = matches[0];
+
+  return (
+    <motion.div
+      className="mt-4 p-3 rounded-xl bg-gradient-to-r from-[#6366f1]/10 to-[#8b5cf6]/10 border border-[#6366f1]/20"
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: 0.3 }}
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+          <img
+            src={topMatch.destination.image}
+            alt={topMatch.destination.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-[#8b5cf6] font-medium">Your top match is forming...</p>
+          <p className="text-sm text-white font-semibold truncate">
+            {topMatch.destination.emoji} {topMatch.destination.name}
+          </p>
+          <div className="flex items-center gap-1 mt-0.5">
+            <div className="h-1.5 flex-1 bg-[#1a1a24] rounded-full overflow-hidden max-w-[100px]">
+              <motion.div
+                className="h-full bg-gradient-to-r from-[#22c55e] to-[#16a34a] rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${topMatch.matchPercent}%` }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+              />
+            </div>
+            <span className="text-xs text-[#22c55e] font-bold">{topMatch.matchPercent}%</span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// Progress bar with step labels
+function QuickProgressBar({
   currentRound,
-  totalRounds,
+  totalRounds
 }: {
   currentRound: number;
   totalRounds: number;
 }) {
-  return (
-    <div className="flex items-center gap-1.5 sm:gap-2">
-      {/* Regular round dots */}
-      {Array.from({ length: totalRounds }).map((_, index) => (
-        <motion.div
-          key={index}
-          className={`rounded-full transition-all duration-300 ${
-            index < currentRound
-              ? 'bg-[#6366f1] w-2 h-2 sm:w-2.5 sm:h-2.5'
-              : index === currentRound
-              ? 'bg-[#6366f1] w-3 h-3 sm:w-4 sm:h-4 ring-2 ring-[#6366f1]/30'
-              : 'bg-[#27272a] w-2 h-2 sm:w-2.5 sm:h-2.5'
-          }`}
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: index * 0.05 }}
-        />
-      ))}
+  const steps = ['Pick', 'Match', 'Book!'];
 
-      {/* Wildcard indicator (star) */}
-      <div className="w-1" />
-      <motion.div
-        className={`flex items-center justify-center rounded-full transition-all duration-300 ${
-          currentRound >= totalRounds
-            ? 'bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] w-4 h-4 sm:w-5 sm:h-5'
-            : 'bg-[#27272a] w-3 h-3 sm:w-4 sm:h-4'
-        }`}
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: totalRounds * 0.05 }}
-      >
-        <span className={`text-xs ${currentRound >= totalRounds ? 'text-white' : 'text-[#52525b]'}`}>
-          *
-        </span>
-      </motion.div>
+  return (
+    <div className="w-full max-w-xs">
+      <div className="flex justify-between mb-2">
+        {steps.map((step, i) => (
+          <span
+            key={step}
+            className={`text-xs font-medium transition-colors ${
+              i <= currentRound ? 'text-[#6366f1]' : 'text-[#52525b]'
+            }`}
+          >
+            {step}
+          </span>
+        ))}
+      </div>
+      <div className="h-2 bg-[#1a1a24] rounded-full overflow-hidden">
+        <motion.div
+          className="h-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] rounded-full"
+          initial={{ width: 0 }}
+          animate={{ width: `${((currentRound + 1) / totalRounds) * 100}%` }}
+          transition={{ duration: 0.3 }}
+        />
+      </div>
     </div>
   );
 }
 
-// Vibe Round Component (inline for direct control)
-function VibeRoundDisplay({
+// Urgency banner
+function UrgencyBanner() {
+  const [messageIndex, setMessageIndex] = useState(0);
+  const message = urgencyMessages[messageIndex];
+  const Icon = message.icon;
+
+  // Rotate messages
+  useState(() => {
+    const interval = setInterval(() => {
+      setMessageIndex(i => (i + 1) % urgencyMessages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  });
+
+  return (
+    <motion.div
+      key={messageIndex}
+      className="flex items-center justify-center gap-2 py-2 px-4 bg-[#22c55e]/10 border-y border-[#22c55e]/20"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <Icon className="w-4 h-4 text-[#22c55e]" />
+      <span className="text-sm text-[#22c55e] font-medium">{message.text}</span>
+    </motion.div>
+  );
+}
+
+// Streamlined round display
+function QuickRoundDisplay({
   round,
+  roundIndex,
   onSelect,
   disabled,
+  scores,
 }: {
   round: typeof vibeRounds[0];
+  roundIndex: number;
   onSelect: (image: VibeImage) => void;
   disabled: boolean;
+  scores: Record<string, number>;
 }) {
   return (
     <motion.div
-      className="w-full flex flex-col items-center gap-6"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+      className="w-full flex flex-col items-center gap-4"
+      initial={{ opacity: 0, x: 50 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: -50 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
     >
-      {/* Category Badge */}
-      <motion.div
-        className="inline-block px-4 py-1.5 rounded-full bg-[#6366f1]/10 border border-[#6366f1]/30"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.1 }}
-      >
-        <span className="text-xs sm:text-sm font-medium text-[#6366f1]">
-          {round.category}
-        </span>
-      </motion.div>
-
-      {/* Question */}
+      {/* Question - bigger and bolder */}
       <motion.h2
-        className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center px-4"
-        initial={{ opacity: 0, y: 10 }}
+        className="text-2xl sm:text-3xl md:text-4xl font-bold text-white text-center px-4"
+        initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
+        transition={{ delay: 0.1 }}
       >
         {round.question}
       </motion.h2>
 
-      {/* Image Pair */}
+      {/* Category hint */}
+      <motion.p
+        className="text-sm text-[#6366f1] font-medium"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.15 }}
+      >
+        Question {roundIndex + 1} of {TOTAL_ROUNDS}
+      </motion.p>
+
+      {/* Image Pair - larger */}
       <motion.div
-        className="w-full px-4"
+        className="w-full px-2 sm:px-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -120,175 +199,18 @@ function VibeRoundDisplay({
         />
       </motion.div>
 
-      {/* Tap hint */}
+      {/* Tap to select */}
       <motion.p
-        className="text-sm text-[#71717a] text-center"
+        className="text-sm text-[#71717a]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.4 }}
       >
-        Tap the image that speaks to you
+        Tap the one that feels right
       </motion.p>
-    </motion.div>
-  );
-}
 
-// Wildcard Round Component
-function WildcardRoundDisplay({
-  onSelect,
-  onTimeout,
-  timeLimit = WILDCARD_TIME_LIMIT,
-}: {
-  onSelect: (image: VibeImage) => void;
-  onTimeout: () => void;
-  timeLimit?: number;
-}) {
-  const [timeLeft, setTimeLeft] = useState(timeLimit);
-  const [selectedImage, setSelectedImage] = useState<VibeImage | null>(null);
-  const [wildcardOptions] = useState<VibeImage[]>(() => {
-    // Generate 4 random wildcard images on mount
-    const options: VibeImage[] = [];
-    for (let i = 0; i < 4; i++) {
-      options.push(getRandomWildcard());
-    }
-    return options;
-  });
-
-  // Countdown timer
-  useEffect(() => {
-    if (selectedImage) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          onTimeout();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [selectedImage, onTimeout]);
-
-  const handleSelect = useCallback(
-    (image: VibeImage) => {
-      if (selectedImage) return;
-      setSelectedImage(image);
-      onSelect(image);
-    },
-    [selectedImage, onSelect]
-  );
-
-  const progress = (timeLeft / timeLimit) * 100;
-
-  return (
-    <motion.div
-      className="w-full flex flex-col items-center gap-6"
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.4 }}
-    >
-      {/* Wildcard Badge */}
-      <motion.div
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#6366f1]/20 to-[#8b5cf6]/20 border border-[#6366f1]/40"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <span className="text-lg">*</span>
-        <span className="text-sm font-semibold text-[#a78bfa]">WILDCARD ROUND</span>
-        <span className="text-lg">*</span>
-      </motion.div>
-
-      {/* Title */}
-      <motion.h2
-        className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center px-4"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-      >
-        Quick! Pick one before time runs out!
-      </motion.h2>
-
-      {/* Timer Bar */}
-      <div className="w-full max-w-md px-4">
-        <div className="relative h-2 bg-[#1a1a24] rounded-full overflow-hidden">
-          <motion.div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] rounded-full"
-            initial={{ width: '100%' }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
-        <div className="flex justify-center mt-2">
-          <motion.span
-            className={`text-2xl font-bold ${timeLeft <= 2 ? 'text-red-500' : 'text-[#6366f1]'}`}
-            animate={timeLeft <= 2 ? { scale: [1, 1.2, 1] } : {}}
-            transition={{ duration: 0.3, repeat: timeLeft <= 2 ? Infinity : 0 }}
-          >
-            {timeLeft}s
-          </motion.span>
-        </div>
-      </div>
-
-      {/* Image Grid - 2x2 */}
-      <motion.div
-        className="w-full max-w-lg px-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        <div className="grid grid-cols-2 gap-3">
-          {wildcardOptions.map((image, index) => (
-            <motion.button
-              key={`${image.id}-${index}`}
-              className={`relative aspect-square rounded-xl sm:rounded-2xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-[#6366f1] focus:ring-offset-2 focus:ring-offset-[#0a0a0f] ${
-                selectedImage && selectedImage.id !== image.id ? 'opacity-40' : ''
-              }`}
-              onClick={() => handleSelect(image)}
-              disabled={!!selectedImage}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{
-                opacity: 1,
-                scale: 1,
-                ...(selectedImage?.id === image.id ? { scale: 1.05 } : {}),
-              }}
-              transition={{ delay: 0.1 * index, duration: 0.3 }}
-              whileHover={!selectedImage ? { scale: 1.05 } : {}}
-              whileTap={!selectedImage ? { scale: 0.95 } : {}}
-            >
-              {/* Image */}
-              <img
-                src={image.url}
-                alt={image.alt}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-              {/* Vibe Label */}
-              <div className="absolute bottom-2 left-2 right-2">
-                <span className="text-xs sm:text-sm font-medium text-white line-clamp-1">
-                  {image.vibe}
-                </span>
-              </div>
-
-              {/* Selected indicator */}
-              {selectedImage?.id === image.id && (
-                <motion.div
-                  className="absolute inset-0 border-4 border-[#6366f1] rounded-xl sm:rounded-2xl"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                />
-              )}
-            </motion.button>
-          ))}
-        </div>
-      </motion.div>
+      {/* Destination teaser - builds excitement */}
+      <DestinationTeaser scores={scores} roundIndex={roundIndex} />
     </motion.div>
   );
 }
@@ -297,15 +219,23 @@ export default function ChatPage() {
   const router = useRouter();
 
   // State
-  const [currentRound, setCurrentRound] = useState(0); // 0-7 = regular, 8 = wildcard
+  const [currentRound, setCurrentRound] = useState(0);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [selections, setSelections] = useState<VibeImage[]>([]);
-  const [aiMessage, setAiMessage] = useState("Let's find your perfect escape! What calls to you?");
+  const [aiMessage, setAiMessage] = useState("Pick the vibe that calls to you!");
   const [isComplete, setIsComplete] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
 
-  // Handle image selection for regular rounds
+  // Get the actual round data from quick rounds
+  const currentVibeRound = useMemo(() => {
+    if (currentRound < TOTAL_ROUNDS) {
+      return vibeRounds[QUICK_ROUNDS[currentRound]];
+    }
+    return null;
+  }, [currentRound]);
+
+  // Handle image selection
   const handleSelection = useCallback(
     (image: VibeImage) => {
       if (isTransitioning || isComplete) return;
@@ -323,78 +253,40 @@ export default function ChatPage() {
       // Track selection
       setSelections((prev) => [...prev, image]);
 
-      // Show AI reaction after brief delay
+      // Quick AI reaction
       setTimeout(() => {
         setIsAiTyping(false);
         setAiMessage(getAIReaction(image.scores));
 
-        // Move to next round after delay
+        // Move to next round quickly
         setTimeout(() => {
           const nextRound = currentRound + 1;
 
-          if (nextRound > WILDCARD_ROUND) {
-            // All rounds complete - calculate results
+          if (nextRound >= TOTAL_ROUNDS) {
+            // Quiz complete - calculate and show results
             completeQuiz(newScores);
           } else {
             setCurrentRound(nextRound);
             setIsTransitioning(false);
 
-            // Set appropriate AI message for next round
-            if (nextRound === WILDCARD_ROUND) {
-              setAiMessage('One last thing... Bonus round!');
-            } else if (nextRound < TOTAL_ROUNDS) {
-              const nextQuestion = vibeRounds[nextRound].question;
-              setAiMessage(nextQuestion);
+            // Exciting progression messages
+            if (nextRound === 1) {
+              setAiMessage("Great choice! One more...");
+            } else if (nextRound === 2) {
+              setAiMessage("Almost there! Final pick...");
             }
           }
         }, TRANSITION_DELAY);
-      }, 500);
+      }, 400);
     },
     [currentRound, scores, isTransitioning, isComplete]
   );
-
-  // Handle wildcard selection
-  const handleWildcardSelect = useCallback(
-    (image: VibeImage) => {
-      if (isComplete) return;
-
-      setIsAiTyping(true);
-
-      // Update scores with wildcard selection
-      const newScores = { ...scores };
-      Object.entries(image.scores).forEach(([key, value]) => {
-        newScores[key] = (newScores[key] || 0) + value;
-      });
-      setScores(newScores);
-      setSelections((prev) => [...prev, image]);
-
-      setTimeout(() => {
-        setIsAiTyping(false);
-        setAiMessage(getAIReaction(image.scores));
-
-        setTimeout(() => {
-          completeQuiz(newScores);
-        }, TRANSITION_DELAY);
-      }, 500);
-    },
-    [scores, isComplete]
-  );
-
-  // Handle wildcard timeout
-  const handleWildcardTimeout = useCallback(() => {
-    if (isComplete) return;
-
-    setAiMessage("Time's up! Let me see what we've got...");
-    setTimeout(() => {
-      completeQuiz(scores);
-    }, TRANSITION_DELAY);
-  }, [scores, isComplete]);
 
   // Complete quiz and redirect
   const completeQuiz = useCallback(
     (finalScores: Record<string, number>) => {
       setIsComplete(true);
-      setAiMessage("I've found your perfect destinations! Let me show you...");
+      setAiMessage("Found your perfect match! Loading deals...");
 
       // Calculate matches
       const matches = calculateMatches(finalScores, destinations);
@@ -409,85 +301,77 @@ export default function ChatPage() {
         })
       );
 
-      // Redirect after short delay
+      // Quick redirect to results
       setTimeout(() => {
         router.push('/result');
-      }, 2000);
+      }, 1500);
     },
     [router]
   );
 
-  const isWildcardRound = currentRound === WILDCARD_ROUND;
-  const currentVibeRound = currentRound < TOTAL_ROUNDS ? vibeRounds[currentRound] : null;
-
   return (
     <div className="min-h-screen-safe bg-[#0a0a0f] flex flex-col">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/5">
+      {/* Urgency banner at top */}
+      <UrgencyBanner />
+
+      {/* Compact header */}
+      <header className="sticky top-0 z-50 bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/5">
         <Container>
-          <div className="flex items-center justify-between h-16">
-            {/* Back button */}
-            <Link href="/">
-              <motion.button
-                className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#1a1a24] border border-white/5 text-[#a1a1aa] hover:text-white hover:border-white/10 transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <ArrowLeft size={20} />
-              </motion.button>
-            </Link>
-
+          <div className="flex items-center justify-between h-14 gap-4">
             {/* Logo */}
-            <Link href="/">
-              <span className="text-xl font-bold gradient-text">ClickOrSkip</span>
+            <Link href="/" className="flex-shrink-0">
+              <span className="text-lg font-bold gradient-text">ClickOrSkip</span>
             </Link>
 
-            {/* Progress indicator */}
-            <ProgressIndicator currentRound={currentRound} totalRounds={TOTAL_ROUNDS} />
+            {/* Progress */}
+            <QuickProgressBar currentRound={currentRound} totalRounds={TOTAL_ROUNDS} />
           </div>
         </Container>
       </header>
 
-      {/* Main content area */}
-      <main className="flex-1 pt-24 pb-32 overflow-y-auto flex flex-col items-center justify-center">
-        <Container className="max-w-2xl">
+      {/* Main content */}
+      <main className="flex-1 py-6 sm:py-8 overflow-y-auto flex flex-col items-center justify-center">
+        <Container className="max-w-xl">
           <AnimatePresence mode="wait">
-            {!isComplete && !isWildcardRound && currentVibeRound && (
-              <VibeRoundDisplay
+            {!isComplete && currentVibeRound && (
+              <QuickRoundDisplay
                 key={`round-${currentRound}`}
                 round={currentVibeRound}
+                roundIndex={currentRound}
                 onSelect={handleSelection}
                 disabled={isTransitioning}
-              />
-            )}
-
-            {!isComplete && isWildcardRound && (
-              <WildcardRoundDisplay
-                key="wildcard"
-                onSelect={handleWildcardSelect}
-                onTimeout={handleWildcardTimeout}
-                timeLimit={WILDCARD_TIME_LIMIT}
+                scores={scores}
               />
             )}
 
             {isComplete && (
               <motion.div
                 key="complete"
-                className="flex flex-col items-center justify-center py-12"
+                className="flex flex-col items-center justify-center py-8"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
+                transition={{ duration: 0.4 }}
               >
                 <motion.div
-                  className="w-16 h-16 mb-6 rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] flex items-center justify-center"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                  className="w-20 h-20 mb-6 rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] flex items-center justify-center"
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 1, repeat: Infinity }}
                 >
-                  <span className="text-2xl text-white">*</span>
+                  <Sparkles className="w-10 h-10 text-white" />
                 </motion.div>
-                <p className="text-lg text-[#a1a1aa] text-center">
-                  Finding your perfect destinations...
+                <h2 className="text-2xl font-bold text-white mb-2">Perfect Match Found!</h2>
+                <p className="text-[#a1a1aa] text-center mb-4">
+                  Loading exclusive deals for you...
                 </p>
+                <motion.div
+                  className="flex items-center gap-2 text-[#22c55e]"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <Clock className="w-4 h-4" />
+                  <span className="text-sm font-medium">Checking live prices...</span>
+                </motion.div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -495,7 +379,7 @@ export default function ChatPage() {
       </main>
 
       {/* AI Chat Strip - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/95 to-transparent">
+      <div className="sticky bottom-0 left-0 right-0 z-50 p-3 sm:p-4 bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f]/95 to-transparent">
         <AIChatStrip message={aiMessage} isTyping={isAiTyping} />
       </div>
     </div>

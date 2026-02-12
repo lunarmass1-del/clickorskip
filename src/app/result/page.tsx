@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, RefreshCw, Sparkles, Share2, Copy, Check, TrendingUp } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Sparkles, Share2, Copy, Check, TrendingUp, Clock, Zap, Plane, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import Container from '@/components/ui/Container';
 import Button from '@/components/ui/Button';
@@ -11,6 +11,7 @@ import DestinationCard from '@/components/result/DestinationCard';
 import CTAButtons from '@/components/result/CTAButtons';
 import ShareButtons from '@/components/result/ShareButtons';
 import { DestinationMatch } from '@/types';
+import { affiliateLinks } from '@/data/affiliateLinks';
 
 interface StoredResults {
   matches: DestinationMatch[];
@@ -39,7 +40,7 @@ const vibeLabels: Record<string, { label: string; emoji: string }> = {
 // Get top N vibe categories from scores
 function getTopVibes(scores: Record<string, number>, count: number = 3) {
   return Object.entries(scores)
-    .filter(([key]) => vibeLabels[key]) // Only include valid vibe categories
+    .filter(([key]) => vibeLabels[key])
     .sort((a, b) => b[1] - a[1])
     .slice(0, count)
     .map(([key, score]) => ({
@@ -49,83 +50,57 @@ function getTopVibes(scores: Record<string, number>, count: number = 3) {
     }));
 }
 
-// Vibe Profile Card component
-function VibeProfileCard({ vibes }: { vibes: { key: string; score: number; label: string; emoji: string }[] }) {
-  const maxScore = Math.max(...vibes.map(v => v.score), 1);
-
+// Compact Vibe Profile (inline)
+function VibeProfileCompact({ vibes }: { vibes: { key: string; score: number; label: string; emoji: string }[] }) {
   return (
     <motion.div
-      className="card p-6"
-      initial={{ opacity: 0, y: 20 }}
+      className="flex flex-wrap justify-center gap-2 mb-6"
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.6 }}
+      transition={{ delay: 0.4 }}
     >
-      <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="w-5 h-5 text-[#8b5cf6]" />
-        <h3 className="text-lg font-semibold text-white">Your Vibe Profile</h3>
-      </div>
-
-      <div className="space-y-4">
-        {vibes.map((vibe, index) => (
-          <motion.div
-            key={vibe.key}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.7 + index * 0.1 }}
-          >
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{vibe.emoji}</span>
-                <span className="text-sm font-medium text-white">{vibe.label}</span>
-              </div>
-              <span className="text-xs text-[#a1a1aa]">
-                {Math.round((vibe.score / maxScore) * 100)}%
-              </span>
-            </div>
-            <div className="h-2 bg-[#1a1a24] rounded-full overflow-hidden">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6]"
-                initial={{ width: 0 }}
-                animate={{ width: `${(vibe.score / maxScore) * 100}%` }}
-                transition={{ delay: 0.8 + index * 0.1, duration: 0.6, ease: 'easeOut' }}
-              />
-            </div>
-          </motion.div>
-        ))}
-      </div>
+      {vibes.map((vibe) => (
+        <span
+          key={vibe.key}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1a1a24] border border-white/10 text-sm"
+        >
+          <span>{vibe.emoji}</span>
+          <span className="text-white font-medium">{vibe.label}</span>
+        </span>
+      ))}
     </motion.div>
   );
 }
 
-// Other matches preview card
-function OtherMatchCard({ match }: { match: DestinationMatch }) {
+// Other matches preview - compact
+function OtherMatchCard({ match, onClick }: { match: DestinationMatch; onClick: () => void }) {
   return (
-    <motion.div
-      className="card overflow-hidden cursor-pointer group"
+    <motion.button
+      onClick={onClick}
+      className="card overflow-hidden cursor-pointer group text-left w-full"
       whileHover={{ y: -4, scale: 1.02 }}
       transition={{ duration: 0.2 }}
     >
       <div
-        className="h-32 bg-cover bg-center relative mb-4 rounded-xl overflow-hidden"
+        className="h-28 bg-cover bg-center relative rounded-xl overflow-hidden"
         style={{ backgroundImage: `url(${match.destination.image})` }}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
         <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
           <div>
-            <span className="text-lg mr-2">{match.destination.emoji}</span>
-            <span className="font-semibold text-shadow">{match.destination.name}</span>
+            <span className="text-lg mr-1">{match.destination.emoji}</span>
+            <span className="font-semibold text-white text-shadow">{match.destination.name}</span>
           </div>
           <span className="text-sm font-bold text-[#22c55e]">
             {match.matchPercent}%
           </span>
         </div>
       </div>
-      <p className="text-sm text-[#a1a1aa] line-clamp-2">{match.destination.tagline}</p>
-    </motion.div>
+    </motion.button>
   );
 }
 
-// Share Results button component
+// Share Results button
 function ShareResultsButton({
   topMatch,
   vibes
@@ -134,30 +109,13 @@ function ShareResultsButton({
   vibes: { label: string; emoji: string }[]
 }) {
   const [copied, setCopied] = useState(false);
-  const [showModal, setShowModal] = useState(false);
 
   const generateShareText = () => {
     const vibeText = vibes.map(v => `${v.emoji} ${v.label}`).join(', ');
-    return `My travel personality: ${vibeText}
-
-My perfect match: ${topMatch.destination.emoji} ${topMatch.destination.name} (${topMatch.matchPercent}% match!)
-
-"${topMatch.destination.tagline}"
-
-Find your perfect destination at ClickOrSkip!`;
+    return `My travel personality: ${vibeText}\n\nMy perfect match: ${topMatch.destination.emoji} ${topMatch.destination.name} (${topMatch.matchPercent}% match!)\n\nFind yours at ClickOrSkip!`;
   };
 
-  const handleCopyResults = async () => {
-    try {
-      await navigator.clipboard.writeText(generateShareText());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
-
-  const handleNativeShare = async () => {
+  const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
@@ -166,79 +124,38 @@ Find your perfect destination at ClickOrSkip!`;
           url: window.location.origin,
         });
       } catch (err) {
-        // User cancelled sharing
+        // User cancelled
       }
     } else {
-      setShowModal(true);
+      try {
+        await navigator.clipboard.writeText(generateShareText());
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
     }
   };
 
   return (
-    <>
-      <motion.button
-        onClick={handleNativeShare}
-        className="flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-semibold shadow-lg hover:shadow-xl transition-shadow"
-        whileHover={{ scale: 1.02, y: -2 }}
-        whileTap={{ scale: 0.98 }}
-      >
-        <Share2 className="w-5 h-5" />
-        Share My Results
-      </motion.button>
-
-      {/* Share Modal for desktop */}
-      <AnimatePresence>
-        {showModal && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowModal(false)}
-          >
-            <motion.div
-              className="bg-[#12121a] border border-white/10 rounded-2xl p-6 max-w-md w-full"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-lg font-semibold text-white mb-4">Share Your Results</h3>
-              <div className="bg-[#0a0a0f] rounded-xl p-4 mb-4">
-                <pre className="text-sm text-[#a1a1aa] whitespace-pre-wrap font-sans">
-                  {generateShareText()}
-                </pre>
-              </div>
-              <div className="flex gap-3">
-                <motion.button
-                  onClick={handleCopyResults}
-                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
-                  whileTap={{ scale: 0.98 }}
-                >
-                  {copied ? (
-                    <>
-                      <Check className="w-4 h-4 text-[#22c55e]" />
-                      Copied!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="w-4 h-4" />
-                      Copy
-                    </>
-                  )}
-                </motion.button>
-                <motion.button
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-[#a1a1aa] transition-colors"
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Close
-                </motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+    <motion.button
+      onClick={handleShare}
+      className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium transition-colors"
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+    >
+      {copied ? (
+        <>
+          <Check className="w-5 h-5 text-[#22c55e]" />
+          Copied!
+        </>
+      ) : (
+        <>
+          <Share2 className="w-5 h-5" />
+          Share Results
+        </>
+      )}
+    </motion.button>
   );
 }
 
@@ -246,21 +163,21 @@ export default function ResultPage() {
   const router = useRouter();
   const [results, setResults] = useState<StoredResults | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedMatch, setSelectedMatch] = useState<DestinationMatch | null>(null);
 
   useEffect(() => {
-    // Read results from sessionStorage
     const storedResults = sessionStorage.getItem('travelResults');
 
     if (storedResults) {
       try {
         const parsed = JSON.parse(storedResults);
         setResults(parsed);
+        setSelectedMatch(parsed.matches[0]);
       } catch (error) {
         console.error('Failed to parse results:', error);
         router.push('/chat');
       }
     } else {
-      // No results found, redirect to chat
       router.push('/chat');
     }
 
@@ -270,6 +187,11 @@ export default function ResultPage() {
   const handleTryAgain = () => {
     sessionStorage.removeItem('travelResults');
     router.push('/chat');
+  };
+
+  const handleSelectMatch = (match: DestinationMatch) => {
+    setSelectedMatch(match);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (isLoading) {
@@ -284,7 +206,7 @@ export default function ResultPage() {
     );
   }
 
-  if (!results || results.matches.length === 0) {
+  if (!results || results.matches.length === 0 || !selectedMatch) {
     return (
       <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
         <div className="text-center">
@@ -297,33 +219,19 @@ export default function ResultPage() {
     );
   }
 
-  const topMatch = results.matches[0];
-  const otherMatches = results.matches.slice(1);
   const topVibes = getTopVibes(results.scores, 3);
+  const otherMatches = results.matches.filter(m => m.destination.id !== selectedMatch.destination.id);
 
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
-      {/* Header */}
+      {/* Compact header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/5">
         <Container>
-          <div className="flex items-center justify-between h-16">
-            {/* Back button */}
-            <Link href="/">
-              <motion.button
-                className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#1a1a24] border border-white/5 text-[#a1a1aa] hover:text-white hover:border-white/10 transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <ArrowLeft size={20} />
-              </motion.button>
+          <div className="flex items-center justify-between h-14">
+            <Link href="/" className="flex-shrink-0">
+              <span className="text-lg font-bold gradient-text">ClickOrSkip</span>
             </Link>
 
-            {/* Logo */}
-            <Link href="/">
-              <span className="text-xl font-bold gradient-text">ClickOrSkip</span>
-            </Link>
-
-            {/* Start Over button */}
             <motion.button
               onClick={handleTryAgain}
               className="flex items-center gap-2 text-sm text-[#a1a1aa] hover:text-white transition-colors"
@@ -331,31 +239,34 @@ export default function ResultPage() {
               whileTap={{ scale: 0.95 }}
             >
               <RefreshCw size={16} />
-              <span className="hidden sm:inline">Start Over</span>
+              <span className="hidden sm:inline">Try Again</span>
             </motion.button>
           </div>
         </Container>
       </header>
 
       {/* Main content */}
-      <main className="pt-24 pb-16">
+      <main className="pt-20 pb-8">
         <Container className="max-w-2xl">
           {/* Success header */}
           <motion.div
-            className="text-center mb-8"
+            className="text-center mb-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
             <motion.div
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/20 mb-4"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/20 mb-3"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring' }}
             >
               <Sparkles className="w-4 h-4 text-[#22c55e]" />
-              <span className="text-sm text-[#22c55e]">We Found Your Perfect Match!</span>
+              <span className="text-sm font-medium text-[#22c55e]">Perfect Match Found!</span>
             </motion.div>
           </motion.div>
+
+          {/* Your vibe badges */}
+          <VibeProfileCompact vibes={topVibes} />
 
           {/* Main destination card */}
           <motion.div
@@ -363,96 +274,96 @@ export default function ResultPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <DestinationCard match={topMatch} />
+            <DestinationCard match={selectedMatch} />
           </motion.div>
 
-          {/* Your Vibe Profile */}
-          {topVibes.length > 0 && (
-            <motion.div
-              className="mt-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <VibeProfileCard vibes={topVibes} />
-            </motion.div>
-          )}
-
-          {/* CTA Buttons */}
+          {/* CTA Buttons - IMMEDIATE after destination */}
           <motion.div
-            className="mt-8"
+            className="mt-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
+            transition={{ delay: 0.5 }}
           >
-            <CTAButtons destination={topMatch.destination} />
+            <CTAButtons destination={selectedMatch.destination} />
           </motion.div>
 
           {/* Other matches */}
           {otherMatches.length > 0 && (
             <motion.div
-              className="mt-12"
+              className="mt-10"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 1.0 }}
+              transition={{ delay: 0.8 }}
             >
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-4 mb-4">
                 <div className="h-px flex-1 bg-white/10" />
-                <h2 className="text-lg font-semibold text-[#a1a1aa]">Runner-Up Matches</h2>
+                <h2 className="text-sm font-medium text-[#a1a1aa]">Also Great For You</h2>
                 <div className="h-px flex-1 bg-white/10" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 {otherMatches.map((match, index) => (
                   <motion.div
                     key={match.destination.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1.1 + index * 0.1 }}
+                    transition={{ delay: 0.9 + index * 0.1 }}
                   >
-                    <OtherMatchCard match={match} />
+                    <OtherMatchCard
+                      match={match}
+                      onClick={() => handleSelectMatch(match)}
+                    />
                   </motion.div>
                 ))}
               </div>
             </motion.div>
           )}
 
-          {/* Share section */}
+          {/* Share + Try Again */}
           <motion.div
-            className="mt-12"
+            className="mt-8 mb-24 sm:mb-8 space-y-3"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.2 }}
+            transition={{ delay: 1.0 }}
           >
-            <div className="flex items-center gap-4 mb-6">
-              <div className="h-px flex-1 bg-white/10" />
-              <h2 className="text-lg font-semibold text-[#a1a1aa]">Share Your Result</h2>
-              <div className="h-px flex-1 bg-white/10" />
+            <ShareResultsButton topMatch={selectedMatch} vibes={topVibes} />
+
+            <div className="flex justify-center">
+              <button
+                onClick={handleTryAgain}
+                className="text-sm text-[#71717a] hover:text-white transition-colors flex items-center gap-1.5"
+              >
+                <RefreshCw size={14} />
+                Start fresh with new preferences
+              </button>
             </div>
-
-            {/* Share Results Button with full summary */}
-            <div className="mb-6">
-              <ShareResultsButton topMatch={topMatch} vibes={topVibes} />
-            </div>
-
-            {/* Social share buttons */}
-            <ShareButtons destination={topMatch.destination} matchPercent={topMatch.matchPercent} />
-          </motion.div>
-
-          {/* Try again button */}
-          <motion.div
-            className="mt-12 text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.4 }}
-          >
-            <Button variant="secondary" onClick={handleTryAgain} className="gap-2">
-              <RefreshCw size={18} />
-              Try Again
-            </Button>
           </motion.div>
         </Container>
       </main>
+
+      {/* Sticky Mobile CTA - Fixed at bottom on mobile */}
+      <motion.div
+        className="fixed bottom-0 left-0 right-0 z-50 sm:hidden"
+        initial={{ y: 100 }}
+        animate={{ y: 0 }}
+        transition={{ delay: 0.5, type: 'spring', stiffness: 300, damping: 30 }}
+      >
+        <div className="bg-gradient-to-t from-[#0a0a0f] via-[#0a0a0f] to-transparent pt-4 pb-2 px-4">
+          <a
+            href={affiliateLinks.flights.getLink(selectedMatch.destination.id)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white font-bold shadow-lg shadow-[#6366f1]/30"
+          >
+            <Plane className="w-5 h-5" />
+            <span>Find Flights to {selectedMatch.destination.name}</span>
+            <ExternalLink className="w-4 h-4" />
+          </a>
+          <p className="text-center text-xs text-zinc-500 mt-2">
+            Compare prices from 100+ airlines
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 }
